@@ -11,6 +11,7 @@ $Rows = @()
 $table = @()
 $NoManager = @()
 $NoTitle = @()
+$NoCompany = @()
 $staff = @()
 $partner = @()
 $1099 = @()
@@ -18,7 +19,7 @@ $agency = @()
 $Others = @()
 
 #Pull all enabled users and their managers
-$ExtAtr15 = Get-ADUser -f{name -like "*"} -Properties extensionattribute15, enabled, manager, userprincipalname, title, department | where {$_.enabled -eq $true} | sort -Unique
+$ExtAtr15 = Get-ADUser -f{name -like "*"} -Properties extensionattribute15, enabled, manager, userprincipalname, title, department, company | where {$_.enabled -eq $true} | sort -Unique
 
 #Loop through users to build tables
 foreach($user in $ExtAtr15){
@@ -59,7 +60,7 @@ foreach($user in $ExtAtr15){
         
         }
 
-        #Create $title variable so that we can use it in the following if statement
+        #Create $title variable
         $title = $user.title
 
         #Notifies there is no title specified
@@ -72,6 +73,19 @@ foreach($user in $ExtAtr15){
 
         }
 
+        #Create $company variable
+        $company = $user.company
+
+        #Notifies there is no company specified
+        if($company -eq $null){
+        
+            $company = "Not Specified"
+
+            #Adds to the total count on unspecified company
+            $NoCompany += $company
+        
+        }
+
         #Add name and manager properties to the table
         $table += [pscustomobject] @{
             
@@ -82,7 +96,7 @@ foreach($user in $ExtAtr15){
             Manager = $manager;
             Manager_Email = $ManagerEmail;
             Employee_Type = $user.extensionattribute15;
-
+            Company = $company;
             
         }
 
@@ -96,7 +110,8 @@ foreach($user in $ExtAtr15){
                 <td>$($user.department)</td>                           
                 <td>$($manager)</td>
                 <td>$($managerEmail)</td>
-                <td>$($user.extensionattribute15)</td>                
+                <td>$($user.extensionattribute15)</td>
+                <td>$($company)</td>             
             </tr>
 
 "@
@@ -149,8 +164,9 @@ $HTML = @"
                 <p><u>Full List of Active Employee Accounts in Active Directory</u></p>
                 <p><strong>Total Accounts:</strong> $($table.Count)</p>
                 <p>
-                    <strong>Unspecified Managers Count:</strong> $($NoManager.count)<br>
-                    <strong>Unspecified Titles Count:</strong> $($NoTitle.count)
+                    <strong>Unspecified Manager Count:</strong> $($NoManager.count)<br>
+                    <strong>Unspecified Title Count:</strong> $($NoTitle.count)<br>
+                    <strong>Unspecified Company Count:</strong> $($NoCompany.count)
                 </p>
                 <p>
                     <strong>Total Staff Employees:</strong> $($staff.count)<br>
@@ -167,7 +183,8 @@ $HTML = @"
                         <th>Department</th>
                         <th>Manager</th>
                         <th>Manager Email</th>
-                        <th>Employee Type</th>                       
+                        <th>Employee Type</th>
+                        <th>Company</th>                     
                     </thead>
                     <tbody>
                         $Rows
